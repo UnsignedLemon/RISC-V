@@ -10,7 +10,21 @@
 #include "../enum.h"
 
 namespace riscv{
-	
+
+//-------------------------    Class QUEUE    ----------------------------------
+class QUEUE{		// Used for PCQ to store predicted PC.
+private:
+	int head,tail;
+	unsigned int data[8];
+public:
+	QUEUE();
+	void pushBack(unsigned int val);
+	unsigned int getFront();
+	void pop();
+	void clear();
+};
+
+//-------------------------    Class REGISTER     ------------------------------
 class REGISTER{
 private:
 	unsigned int input;
@@ -21,6 +35,22 @@ public:
 	void setInput(unsigned int val);
 	void write();
 };
+
+//--------------------------    Class PC    ------------------------------------
+
+class _PC{
+private:
+	unsigned int currentPC;
+public:
+	QUEUE PCQ;
+public:
+	_PC();
+	unsigned int read();
+	unsigned int doPredict();
+	void proceed();
+};
+
+//--------------------------    Class Buffer     -------------------------------
 
 class BUFFER{
 public:
@@ -34,6 +64,8 @@ public:
 public:
 	BUFFER();
 };
+
+//---------------------------    Buffer Process    -----------------------------
 
 void B1_proceed();
 void B2_proceed();

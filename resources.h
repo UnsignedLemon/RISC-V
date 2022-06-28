@@ -13,17 +13,21 @@ namespace riscv{
 	
 	extern riscv::REGISTER R[32];
 	extern riscv::BUFFER B1,B2,B3,B4;
+	extern riscv::_PC        PC;
 	
-	extern riscv::_PREDICTOR PREDICTOR;
 	extern riscv::_IF        IF;
 	extern riscv::_ID        ID;
 	extern riscv::_EX      	 EX;
 	extern riscv::_ME		 ME;
 	extern riscv::_WB		 WB;
 	
-	extern unsigned int PC;
 	extern bool shouldTerminate;
 	extern const unsigned int terminateCmd;
+	
+	extern bool shouldPause;
+	extern bool shouldBubble;
+	extern bool shouldDiscard;
+	extern bool shouldPopPCQ;
 
 }
 

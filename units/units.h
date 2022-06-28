@@ -5,15 +5,6 @@
 
 namespace riscv{
 
-//----------------------    Class Predictor    ---------------------------------
-class _PREDICTOR{
-public:
-	unsigned int newPC;
-public:
-	_PREDICTOR();
-	void proceed();	
-};
-
 //-------------------------    Class IF    -------------------------------------
 class _IF{
 public:
@@ -28,6 +19,11 @@ public:
 //--------------------------    Class ID    ------------------------------------
 class _ID{
 public:
+	// Same as shouldBubble.
+	bool isUnknown;			// If target source REG is required from a LOAD cmd right before the
+							// current cmd, then a BUBBLE is a must, and the val of REG is UNKNOWN.
+							// In other cases, although the val of REG may be unknown in ID process,
+							// in B2 the val can be acquired by FORWARDING.
 	BUFFER outputBuffer;
 public:
 	_ID();
@@ -45,6 +41,8 @@ public:
 
 //---------------------------    Class ME    -----------------------------------
 class _ME{
+private:
+	int stage;			// To simulate 3-cycles MEM access.
 public:
 	BUFFER outputBuffer;
 public:
