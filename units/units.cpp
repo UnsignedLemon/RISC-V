@@ -11,36 +11,6 @@
 using std::cout;
 
 namespace riscv{
-//----------------------------    Predictor    ---------------------------------
-_PREDICTOR::_PREDICTOR(){
-	newPC=0;
-}
-
-void _PREDICTOR::proceed(){
-	if (IF.INS==terminateCmd){
-		newPC=PC;
-		return;
-	}
-	switch(EX.outputBuffer.cmd){
-		case JAL:
-		case JALR:{
-			newPC=EX.outputBuffer.num_rs2;
-			break;
-		}
-		case BEQ:
-		case BNE:
-		case BLT:
-		case BGE:
-		case BLTU:
-		case BGEU:{
-			if (EX.outputBuffer.num_rs1) newPC=EX.outputBuffer.num_rs2;
-			else newPC=PC+4;
-			break;
-		}
-		default:
-			newPC=PC+4;
-	}
-}
 
 //-----------------------------    I F    --------------------------------------
 _IF::_IF(){
@@ -49,8 +19,9 @@ _IF::_IF(){
 }
 
 void _IF::proceed(){
-	INS=memoryData.fetchInt(PC);
-	currentPC=PC;
+	unsigned int pos=PC.read();
+	INS=memoryData.fetchInt(pos);
+	currentPC=pos;
 	opcode=INS&(0x7f);
 	isJumpCmd=opcode&(0x40);
 }
@@ -59,6 +30,8 @@ void _IF::proceed(){
 _ID::_ID(){}
 
 void _ID::proceed(){
+	
+	//=================    Get data & Init    ==================================
 	unsigned int INS=B1.num_rs1;		// Instruction.
 	unsigned int opcode=B1.num_rs2;		// Opcode.
 		
@@ -69,15 +42,21 @@ void _ID::proceed(){
 	
 	int INS_int=(int)(INS);
 	
+	//=======================    Do clear    ===================================
+	shouldBubble=false;
+	isUnknown=false;
+	
 	outputBuffer.currentPC=B1.currentPC;
 	outputBuffer.rs1=outputBuffer.rs2=outputBuffer.rd=0;
 	outputBuffer.num_rs1=outputBuffer.num_rs2=0;
 	outputBuffer.imm=0;
 	
+	//=====================    Deal with INS    ================================
 	if (INS==terminateCmd){
 		outputBuffer.cmd=TERMINATE;
 		return;
 	}
+	
 	switch (opcode){
 		case 0:						//NOP
 			outputBuffer.cmd=NOP;
@@ -290,6 +269,23 @@ void _ID::proceed(){
 		}
 	}
 	
+	// The last cmd is a LOAD with rd = current source REG.
+	// Bubble.
+	if (B2.rd==outputBuffer.rs1 || B2.rd==outputBuffer.rs2){
+		switch (B2.cmd){
+			case LB:
+			case LH:
+			case LW:
+			case LBU:
+			case LHU:{
+				isUnknown=true;
+				shouldBubble=true;
+				break;
+			}
+		}
+	}
+	
+	// May have been updated, but can be solved by forwarding in B2.
 	outputBuffer.num_rs1=R[outputBuffer.rs1].read();
 	outputBuffer.num_rs2=R[outputBuffer.rs2].read(); 
 }
@@ -298,6 +294,10 @@ void _ID::proceed(){
 _EX::_EX(){}
 
 void _EX::proceed(){
+	shouldDiscard=false;
+	shouldPopPCQ=false;
+	
+	//=====================    Calculate    ====================================
 	// num_rs1 & num_rs2 are used for result storage.
 	outputBuffer=B2;
 	outputBuffer.num_rs1=outputBuffer.num_rs2=0;
@@ -331,12 +331,20 @@ void _EX::proceed(){
 				outputBuffer.num_rs2=B2.currentPC+B2.imm;
 				outputBuffer.num_rs1=1;						// Represent that jump successfully.
 			}
+			else{
+				outputBuffer.num_rs2=B2.currentPC+4;
+				outputBuffer.num_rs1=0;
+			}
 			break;
 		}
 		case BNE:{
 			if (B2.num_rs1!=B2.num_rs2){
 				outputBuffer.num_rs2=B2.currentPC+B2.imm;
 				outputBuffer.num_rs1=1;						// Represent that jump successfully.
+			}
+			else{
+				outputBuffer.num_rs2=B2.currentPC+4;
+				outputBuffer.num_rs1=0;
 			}
 			break;
 		}
@@ -345,12 +353,20 @@ void _EX::proceed(){
 				outputBuffer.num_rs2=B2.currentPC+B2.imm;
 				outputBuffer.num_rs1=1;						// Represent that jump successfully.
 			}
+			else{
+				outputBuffer.num_rs2=B2.currentPC+4;
+				outputBuffer.num_rs1=0;
+			}
 			break;
 		}
 		case BGE:{
 			if ((int)B2.num_rs1>=(int)B2.num_rs2){
 				outputBuffer.num_rs2=B2.currentPC+B2.imm;
 				outputBuffer.num_rs1=1;						// Represent that jump successfully.
+			}
+			else{
+				outputBuffer.num_rs2=B2.currentPC+4;
+				outputBuffer.num_rs1=0;
 			}
 			break;
 		}
@@ -359,12 +375,20 @@ void _EX::proceed(){
 				outputBuffer.num_rs2=B2.currentPC+B2.imm;
 				outputBuffer.num_rs1=1;						// Represent that jump successfully.
 			}
+			else{
+				outputBuffer.num_rs2=B2.currentPC+4;
+				outputBuffer.num_rs1=0;
+			}
 			break;
 		}
 		case BGEU:{
 			if (B2.num_rs1>=B2.num_rs2){
 				outputBuffer.num_rs2=B2.currentPC+B2.imm;
 				outputBuffer.num_rs1=1;						// Represent that jump successfully.
+			}
+			else{
+				outputBuffer.num_rs2=B2.currentPC+4;
+				outputBuffer.num_rs1=0;
 			}
 			break;
 		}
@@ -461,61 +485,93 @@ void _EX::proceed(){
 			break;
 		}
 	}
+	
+	//===================    Control state update    ===========================	
+	switch (outputBuffer.cmd){
+		case JAL:
+		case JALR:
+		case BNE:
+		case BEQ:
+		case BLT:
+		case BGE:
+		case BLTU:
+		case BGEU:{
+			unsigned int predictPC=PC.PCQ.getFront();
+			if (predictPC==outputBuffer.num_rs2) shouldPopPCQ=true;
+			else shouldDiscard=true;
+			break;
+		}
+		default:
+			break;
+	}
 }
 
 //------------------------------    M E    -------------------------------------
-_ME::_ME(){}
+_ME::_ME(){stage=0;}
 
 void _ME::proceed(){
-	outputBuffer=B3;
-	outputBuffer.num_rs1=outputBuffer.num_rs2=0;
-	unsigned int pos=B3.num_rs1;
-	switch (B3.cmd){
-		case TERMINATE:{
-			//DO NOTHING
-			break;
+	if (stage==0){
+		outputBuffer=B3;
+		outputBuffer.num_rs1=outputBuffer.num_rs2=0;
+		unsigned int pos=B3.num_rs1;
+		
+		// Default: MEM access cmd.
+		stage=1;
+		shouldPause=true;
+		
+		switch (B3.cmd){
+			// The address of ALL MEMORY ACCESS CMD are stored in num_rs1 of B3.
+			// The result of MEMORY READ CMD are stored in num_rs1 of ME. 
+			case LB:{
+				outputBuffer.num_rs1=(unsigned int)(((int)(memoryData.fetchByte(pos))<<24)>>24);
+				break;
+			}
+			case LH:{
+				outputBuffer.num_rs1=(unsigned int)(((int)(memoryData.fetchHalfWord(pos))<<16)>>16);
+				break;
+			}
+			case LW:{
+				outputBuffer.num_rs1=memoryData.fetchInt(pos);
+				break;
+			}
+			case LBU:{
+				outputBuffer.num_rs1=memoryData.fetchByte(pos);
+				break;
+			}
+			case LHU:{
+				outputBuffer.num_rs1=memoryData.fetchHalfWord(pos);
+				break;
+			}
+			case SB:{
+				memoryData.writeByte(pos,B3.num_rs2);
+				break;
+			}
+			case SH:{
+				memoryData.writeHalfWord(pos,B3.num_rs2);
+				break;
+			}
+			case SW:{
+				memoryData.writeInt(pos,B3.num_rs2);
+				break;
+			}
+			default:{
+				// Restoration.
+				outputBuffer.num_rs1=B3.num_rs1;
+				outputBuffer.num_rs2=B3.num_rs2;
+				// DO NOTHING.
+				stage=0;
+				shouldPause=false;
+				break;
+			}
 		}
-		// The address of ALL MEMORY ACCESS CMD are stored in num_rs1 of B3.
-		// The result of MEMORY READ CMD are stored in num_rs1 of ME. 
-		case LB:{
-			outputBuffer.num_rs1=(unsigned int)(((int)(memoryData.fetchByte(pos))<<24)>>24);
-			break;
-		}
-		case LH:{
-			outputBuffer.num_rs1=(unsigned int)(((int)(memoryData.fetchHalfWord(pos))<<16)>>16);
-			break;
-		}
-		case LW:{
-			outputBuffer.num_rs1=memoryData.fetchInt(pos);
-			break;
-		}
-		case LBU:{
-			outputBuffer.num_rs1=memoryData.fetchByte(pos);
-			break;
-		}
-		case LHU:{
-			outputBuffer.num_rs1=memoryData.fetchHalfWord(pos);
-			break;
-		}
-		case SB:{
-			memoryData.writeByte(pos,B3.num_rs2);
-			break;
-		}
-		case SH:{
-			memoryData.writeHalfWord(pos,B3.num_rs2);
-			break;
-		}
-		case SW:{
-			memoryData.writeInt(pos,B3.num_rs2);
-			break;
-		}
-		default:{
-			// Restoration.
-			outputBuffer.num_rs1=B3.num_rs1;
-			outputBuffer.num_rs2=B3.num_rs2;
-			// DO NOTHING.
-			break;
-		}
+	}
+	else if (stage==1){
+		stage=2;
+		shouldPause=true;		// Pause 2 cycle.
+	}
+	else if (stage==2){
+		stage=0;
+		shouldPause=false;		// Clear Pause.
 	}
 }
 
