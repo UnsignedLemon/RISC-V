@@ -58,19 +58,19 @@ void updateRegister(){
 //		cout<<cnt<<"\n";
 //		system("pause");
 //	}
-	riscv::PC.proceed();
 	riscv::B1_proceed();
+	riscv::PC.proceed();
+	riscv::B4_proceed();
 	riscv::B2_proceed();
 	riscv::B3_proceed();
-	riscv::B4_proceed();
 }
 
 void updateUnit(){
-	riscv::IF.proceed();
 	riscv::ID.proceed();
+	riscv::IF.proceed();
+	riscv::WB.proceed();
 	riscv::EX.proceed();
 	riscv::ME.proceed();
-	riscv::WB.proceed();
 }
 
 #ifdef DEBUG
