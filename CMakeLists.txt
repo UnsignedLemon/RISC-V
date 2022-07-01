@@ -5,6 +5,7 @@ set(CMAKE_CXX_STANDARD 11)
 add_executable(code
 	main.cpp
 	resources.cpp
+	predictor/predictor.cpp
 	data/data.cpp
 	reg/reg.cpp
 	units/units.cpp
