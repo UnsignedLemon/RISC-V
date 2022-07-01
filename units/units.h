@@ -9,11 +9,11 @@ namespace riscv{
 class _IF{
 public:
 	unsigned int INS,opcode,currentPC;
-	bool isJumpCmd;
 	
 public:
 	_IF();
 	void proceed();
+	void clear();
 };
 
 //--------------------------    Class ID    ------------------------------------
@@ -28,6 +28,7 @@ public:
 public:
 	_ID();
 	void proceed();
+	void clear();
 };
 
 //---------------------------    Class EX    -----------------------------------
@@ -37,6 +38,7 @@ public:
 public:
 	_EX();
 	void proceed();
+	void clear();
 };
 
 //---------------------------    Class ME    -----------------------------------
@@ -48,6 +50,7 @@ public:
 public:
 	_ME();
 	void proceed();
+	void clear();
 };
 
 //---------------------------    Class WB    -----------------------------------
@@ -57,6 +60,7 @@ public:
 public:
 	_WB();
 	void proceed();
+	void clear();
 };
 }
 

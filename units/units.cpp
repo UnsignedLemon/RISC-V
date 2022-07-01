@@ -15,7 +15,6 @@ namespace riscv{
 //-----------------------------    I F    --------------------------------------
 _IF::_IF(){
 	INS=opcode=currentPC=0;
-	isJumpCmd=false;
 }
 
 void _IF::proceed(){
@@ -23,11 +22,19 @@ void _IF::proceed(){
 	INS=memoryData.fetchInt(pos);
 	currentPC=pos;
 	opcode=INS&(0x7f);
-	isJumpCmd=opcode&(0x40);
+}
+
+void _IF::clear(){
+	INS=opcode=currentPC=0;
 }
 
 //-----------------------------    I D    --------------------------------------
 _ID::_ID(){}
+
+void _ID::clear(){
+	outputBuffer.clear();
+	isUnknown=false;
+}
 
 void _ID::proceed(){
 	
@@ -293,9 +300,14 @@ void _ID::proceed(){
 //------------------------------    E X    -------------------------------------
 _EX::_EX(){}
 
+void _EX::clear(){
+	outputBuffer.clear();
+}
+
 void _EX::proceed(){
 	shouldDiscard=false;
 	shouldPopPCQ=false;
+	isTaken=false;
 	
 	//=====================    Calculate    ====================================
 	// num_rs1 & num_rs2 are used for result storage.
@@ -490,6 +502,7 @@ void _EX::proceed(){
 	switch (outputBuffer.cmd){
 		case JAL:
 		case JALR:
+			isTaken=true;		// Taken.
 		case BNE:
 		case BEQ:
 		case BLT:
@@ -499,6 +512,8 @@ void _EX::proceed(){
 			unsigned int predictPC=PC.PCQ.getFront();
 			if (predictPC==outputBuffer.num_rs2) shouldPopPCQ=true;
 			else shouldDiscard=true;
+			
+			if (!isTaken) isTaken=outputBuffer.num_rs1;		// Taken.
 			break;
 		}
 		default:
@@ -508,6 +523,11 @@ void _EX::proceed(){
 
 //------------------------------    M E    -------------------------------------
 _ME::_ME(){stage=0;}
+
+void _ME::clear(){
+	stage=0;
+	outputBuffer.clear();
+}
 
 void _ME::proceed(){
 	if (stage==0){
@@ -577,6 +597,10 @@ void _ME::proceed(){
 
 //---------------------------    W B    ----------------------------------------
 _WB::_WB(){}
+
+void _WB::clear(){
+	outputBuffer.clear();
+}
 
 void _WB::proceed(){
 	outputBuffer=B4;

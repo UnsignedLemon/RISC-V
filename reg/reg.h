@@ -34,6 +34,7 @@ public:
 	unsigned int read();
 	void setInput(unsigned int val);
 	void write();
+	void clear();
 };
 
 //--------------------------    Class PC    ------------------------------------
@@ -46,8 +47,8 @@ public:
 public:
 	_PC();
 	unsigned int read();
-	unsigned int doPredict();
 	void proceed();
+	void clear();
 };
 
 //--------------------------    Class Buffer     -------------------------------
@@ -63,6 +64,7 @@ public:
 
 public:
 	BUFFER();
+	void clear();
 };
 
 //---------------------------    Buffer Process    -----------------------------

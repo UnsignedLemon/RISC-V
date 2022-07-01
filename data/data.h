@@ -8,7 +8,6 @@
 #include <fstream>
 #include "../exceptions.h"
 
-
 #define maxSize 524288
 
 namespace riscv{

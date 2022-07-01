@@ -41,27 +41,39 @@ unsigned int _PC::read(){
 	return currentPC;
 }
 
-unsigned int _PC::doPredict(){			// Need further improvement.
-	return currentPC+8;
-}
-
 void _PC::proceed(){
 	if (shouldPause) return;
 	if (shouldBubble) return;
 	if (shouldDiscard){
 		currentPC=EX.outputBuffer.num_rs2;
-		
-		PCQ.clear();					// Prediction FAILED. B1,B2,newPC are invalid.
+		PCQ.clear();					// Prediction MISSED. B1,B2,newPC are invalid.
+		bool isJumpCmd=(EX.outputBuffer.cmd==JAL || EX.outputBuffer.cmd==JALR);
+		PRED.update(EX.outputBuffer.currentPC,isTaken,false,currentPC,isJumpCmd);
 		return;
 	}
-	if (shouldPopPCQ) PCQ.pop();		// Prediction SUCCESS. Check PASSED.
-	if (IF.isJumpCmd){
-		currentPC=doPredict();
-		PCQ.pushBack(currentPC);		// Predicted PC is stored for EX check.
+	if (shouldPopPCQ){					// Prediction HIT. Update PRED first.
+		bool isJumpCmd=(EX.outputBuffer.cmd==JAL || EX.outputBuffer.cmd==JALR);
+		PRED.update(EX.outputBuffer.currentPC,isTaken,true,PCQ.getFront(),isJumpCmd);
+		PCQ.pop();
 	}
-	else{
-		currentPC=currentPC+4;			// No need for prediction check.
+	switch (IF.opcode){
+		case 0x6f:
+		case 0x67:
+		case 0x63:{
+			PRED.doPredict(currentPC);
+			PCQ.pushBack(currentPC);
+			break;
+		}
+		default:{
+			currentPC+=4;
+			break;
+		}
 	}
+}
+
+void _PC::clear(){
+	currentPC=0;
+	PCQ.clear();
 }
 
 //--------------------    Class REGISTER    ------------------------------------
@@ -81,6 +93,10 @@ void REGISTER::write(){
 	output=input;
 }
 
+void REGISTER::clear(){
+	input=output=0;
+}
+
 //---------------------    Class BUFFER    -------------------------------------
 BUFFER::BUFFER(){
 	cmd=NOP;currentPC=0;
@@ -88,7 +104,11 @@ BUFFER::BUFFER(){
 	num_rs1=num_rs2=0;
 }
 
-//---------------------    Process of Buffers    -------------------------------
+void BUFFER::clear(){
+	cmd=NOP;currentPC=0;
+	rs1=rs2=rd=imm=0;
+	num_rs1=num_rs2=0;	
+}
 
 //---------------------    Process of B1    ------------------------------------
 void B1_proceed(){
@@ -106,7 +126,7 @@ void B1_proceed(){
 
 //----------------------    Process of B2    -----------------------------------
 
-//----------------------    Do forwarding    -----------------------------------
+	//======================    Do forwarding    ===============================
 static bool isWriteCmd(cmdType cmd){
 	bool res=false;
 	switch (cmd){
@@ -156,7 +176,7 @@ static bool doForwarding(int regName,unsigned int &regVal){
 	return false;
 }
 
-//----------------------    B2 Process    --------------------------------------
+	//=======================    B2 Process    =================================
 void B2_proceed(){
 	if (shouldPause) return;
 	if (shouldDiscard){
