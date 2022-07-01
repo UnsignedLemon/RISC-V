@@ -20,3 +20,4 @@ RISC-V simulator by UnsignedLemon.
 * `WB`: write back to registers (data from B4).
 
 ### Structure ###
+![Markdown](sample.png)
