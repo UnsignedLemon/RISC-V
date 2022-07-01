@@ -4,6 +4,7 @@ project (RISCV)
 set(CMAKE_CXX_STANDARD 11)
 add_executable(code
 	main.cpp
+	resources.cpp
 	data/data.cpp
 	reg/reg.cpp
 	units/units.cpp
