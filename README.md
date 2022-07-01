@@ -18,6 +18,10 @@ RISC-V simulator by UnsignedLemon.
 * `EX`: do all the calculation (data from B2), such as compute add results or memory address. Also check PC prediction and determin whether instructions behind `shouldDiscard`
 * `ME`: memory access (data from B3). Using 3 cycles to simulate time cost.
 * `WB`: write back to registers (data from B4).
+**Function units can be regarded as combinational circuits although they all have REG/MEM access. Their values can be updated right after REG/MEM update and actually have NO STORAGE UNITS in them (in my code, the storage buffer in each units represents the output ports to the next REAL buffers.)
 
 ### Structure ###
 ![Markdown](sample.png)
+
+## Code structure
+* `main.cpp` clock rise, update `registers`, then update 
