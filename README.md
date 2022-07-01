@@ -1,8 +1,9 @@
 # RISC-V
 RISC-V simulator by UnsignedLemon.
-It's a 5-stage pipeline, supporting random stage order, forwarding and a hybrid PC predictor.
-
-//It's getting dark to dark to see...
-
-//Feel like I'm knocking on knocking on the heaven's door...
-
+* 5-stage pipeline.
+* supporting forwarding and random stage order.
+* with a hybrid PC predictor.
+## Implementation
+### Register part:
+* `memoryData` is the memory of the simulator.
+* `R[0] ~ R[31]` is the valid registers.
