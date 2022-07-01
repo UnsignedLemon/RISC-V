@@ -52,3 +52,25 @@ Here are the variables I used in the predictors above.
 I take PCTableSize as (1<<8) and historySize as (1<<9). Thus 9 previous decisions are recorded. Also, in all testcases, the PC address are relatively small so there are almost no aliasing situations.
 
 `GHP` and `LHP` need some cycles to train accuracy. So a `trainCycle[PCTableSize]` array is used to track the branch cycles of every PC. When the cycle is low, we take the `TBC` to do prediction, while there are enough cycles, we use `GHP` or `LHP` determined by another 2-bit counter `predictorChoice[]`.
+
+### Results ###
+| Testcase | Accuracy | Hit | Total |
+| :----: | :----: | :------------: | :----------: |
+|**array_test1**|0.545455|12|22|
+|**array_test2**|0.576923|15|26|
+|**basicopt1**|0.99456|154295|155139|
+|**bulgarian**|0.95822|68506|71493|
+|**expr**|0.828829|92|111|
+|**gcd**|0.65|78|120|
+|**hanoi**|0.980524|17117|17457|
+|**lvalue2**|0.666667|4|6|
+|**magic**|0.879474|59689|67869|
+|**manyarguments**|0.6|6|10|
+|**multiarray**|0.888889|144|162|
+|**naive**|/|0|0|
+|**pi**|0.851553|34024993|39956380|
+|**qsort**|0.97707|195458|200045|
+|**queens**|0.838594|64669|77116|
+|**statement_test**|0.59901|121|202|
+|**superloop**|0.985484|428712|435027|
+|**tak**|0.791669|48006|60639 |
