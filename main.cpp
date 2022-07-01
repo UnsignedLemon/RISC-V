@@ -32,7 +32,6 @@ void updateUnit(){			// In random order.
 	riscv::WB.proceed();
 }
 
-#define OFFLINE
 const char* pPath="testcases/";
 const char* sPath=".data";
 
