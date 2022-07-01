@@ -11,6 +11,8 @@ class invalid_data_fetch : public exception{};
 class queue_empty : public exception{};
 class unknown_not_match : public exception{};
 class forwarding_not_match : public exception{};
+class invalidPC : public exception{};
+class index_out_of_bound : public exception{};
 
 }
 
