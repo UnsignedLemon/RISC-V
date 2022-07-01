@@ -74,3 +74,5 @@ I take PCTableSize as (1<<8) and historySize as (1<<9). Thus 9 previous decision
 |**statement_test**|0.59901|121|202|
 |**superloop**|0.985484|428712|435027|
 |**tak**|0.791669|48006|60639 |
+
+We can see that the total accuracy of testcases is above 0.8, and the hybrid predictor has a slight advantage over single `LHP` or `TBC`. By the way, the performance of `GHP` is really bad in testcases, for there are no situations of large scale of `if` branches. However, the hybrid predictor still did a good job.
