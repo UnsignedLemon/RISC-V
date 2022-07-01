@@ -33,3 +33,22 @@ RISC-V simulator by UnsignedLemon.
 * `predictor.h`, `predictor.cpp`: hybrid predictor.
 
 ## Predictor Implementation
+A **2-bit counter** *(I call it TBC)* is required, which stores a 2-bit counter for every branch PC.
+There's an advanced version, **Local History Predictor** *(I call it LHP)*, which stores many different 2-bit counter for one branch PC in terms of their 'branch history', a 0/1 sequence of certain length representing the last few branches of this PC `taken/not_taken`.
+Also there's another version, **Global History Predictor** *(GHP)*, where all the branch PC share a global sequence of `taken/not_taken`.
+
+Here are the variables I used in the predictors above.
+### All predictor ###
+* `targetAddress[PCTableSize]`: if `taken`, jump to where.
+### TBC ###
+* `twoBitCounter[]`: 2-bit counter for every PC.
+### LHP ###
+* `branchHistoryTable[]`: the history sequence of every PC representing `taken/not_taken`.
+* `PCTable[PCTableSize][historySize]:` the 2-bit counter for every PC of every history sequence.
+### GHP ###
+* `globalPattern`: the global history sequence of all branches.
+* `PCTable[][]`: same as above. 
+
+I take PCTableSize as (1<<8) and historySize as (1<<9). Thus 9 previous decisions are recorded. Also, in all testcases, the PC address are relatively small so there are almost no aliasing situations.
+
+`GHP` and `LHP` need some cycles to train accuracy. So a `trainCycle[PCTableSize]` array is used to track the branch cycles of every PC. When the cycle is low, we take the `TBC` to do prediction, while there are enough cycles, we use `GHP` or `LHP` determined by another 2-bit counter `predictorChoice[]`.
