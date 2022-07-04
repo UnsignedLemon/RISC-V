@@ -15,21 +15,22 @@ using std::cout;
 using std::string;
 
 void updateRegister(){		// In random order.
+	
+	riscv::B1_proceed();
 	riscv::B4_proceed();
+	riscv::B3_proceed();
 	for (int i=0;i<32;++i) riscv::R[i].write();
 	riscv::PC.proceed();
-	riscv::B3_proceed();
-	riscv::B1_proceed();
 	riscv::B2_proceed();
 
 }
 
 void updateUnit(){			// In random order.
-	riscv::ID.proceed();
-	riscv::IF.proceed();
 	riscv::ME.proceed();
-	riscv::EX.proceed();
+	riscv::ID.proceed();
 	riscv::WB.proceed();
+	riscv::IF.proceed();
+	riscv::EX.proceed();
 }
 
 const char* pPath="testcases/";
